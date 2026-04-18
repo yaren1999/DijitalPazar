@@ -32,6 +32,8 @@ React arayüzü, blockchain üzerindeki anlık değişimleri (token bakiyesi, ye
 - **OpenZeppelin:** Güvenlik kütüphaneleri.
 - **Ethers.js & Mocha/Chai:** Test senaryoları.
 
+"Bu projede güvenliği artırmak için Pausable pattern kullandım."
+
 ## 📦 Kurulum ve Çalıştırma
 
 Önce bağımlılıkları yükleyin:
