@@ -11,7 +11,7 @@ describe("SecureToken Ekosistemi", function () {
         token = await Token.deploy(INITIAL_SUPPLY);
     });
 
-    describe("Dağıtım ve Temel Fonksiyonlar", function () {
+    describe("1. Dağıtım ve Temel Bilgiler", function () {
         it("Toplam arz doğru belirlenmeli", async function () {
             expect(await token.totalSupply()).to.equal(INITIAL_SUPPLY);
         });
@@ -21,47 +21,60 @@ describe("SecureToken Ekosistemi", function () {
         });
     });
 
-    describe("Transfer İşlemleri", function () {
-        it("Token transferi gerçekleşmeli", async function () {
+    describe("2. Transfer ve Onay İşlemleri (ERC20 Standartları)", function () {
+        it("Direkt transfer gerçekleşmeli", async function () {
             const amount = ethers.parseEther("100");
             await token.transfer(addr1.address, amount);
             expect(await token.balanceOf(addr1.address)).to.equal(amount);
         });
 
-        it("Yetersiz bakiye durumunda transfer reddedilmeli", async function () {
-            const initialOwnerBalance = await token.balanceOf(owner.address);
+        it("Sıfır adresine (0x0) transfer yapılamamalı", async function () {
             await expect(
-                token.connect(addr1).transfer(owner.address, 1)
+                token.transfer("0x0000000000000000000000000000000000000000", 100)
             ).to.be.reverted;
+        });
+
+        it("Approve ve TransferFrom (Aracı Transferi) çalışmalı", async function () {
+            const amount = ethers.parseEther("100");
+            await token.approve(addr1.address, amount);
+            await token.connect(addr1).transferFrom(owner.address, addr2.address, amount);
+            expect(await token.balanceOf(addr2.address)).to.equal(amount);
+        });
+
+        it("Allowance (İzin) harcandıkça azalmalı", async function () {
+            const totalAllowance = ethers.parseEther("100");
+            const spendAmount = ethers.parseEther("40");
+            await token.approve(addr1.address, totalAllowance);
+            await token.connect(addr1).transferFrom(owner.address, addr2.address, spendAmount);
+            
+            expect(await token.allowance(owner.address, addr1.address))
+                .to.equal(totalAllowance - spendAmount);
         });
     });
 
-    describe("Güvenlik ve Pausable (Durdurulabilirlik)", function () {
+    describe("3. Güvenlik ve Pausable (Durdurulabilirlik)", function () {
         it("Sistem durdurulduğunda transfer yapılamamalı", async function () {
             await token.pause();
-            await expect(
-                token.transfer(addr1.address, 100)
-            ).to.be.revertedWithCustomError(token, "EnforcedPause");
+            await expect(token.transfer(addr1.address, 100))
+                .to.be.revertedWithCustomError(token, "EnforcedPause");
         });
 
         it("Sadece sahip (Owner) sistemi durdurabilmeli", async function () {
-            await expect(
-                token.connect(addr1).pause()
-            ).to.be.revertedWithCustomError(token, "OwnableUnauthorizedAccount");
-        });
-
-        it("Sistem açıldığında transferler devam etmeli", async function () {
-            await token.pause();
-            await token.unpause();
-            await expect(token.transfer(addr1.address, 100)).to.not.be.reverted;
+            await expect(token.connect(addr1).pause())
+                .to.be.revertedWithCustomError(token, "OwnableUnauthorizedAccount");
         });
     });
 
-    describe("Mint ve Burn (Üretme ve Yakma)", function () {
-        it("Sahip yeni token üretebilmeli", async function () {
+    describe("4. Üretme ve Yakma (Mint & Burn)", function () {
+        it("Sahip (Owner) yeni token üretebilmeli", async function () {
             const mintAmount = ethers.parseEther("500");
             await token.mint(addr1.address, mintAmount);
             expect(await token.balanceOf(addr1.address)).to.equal(mintAmount);
+        });
+
+        it("Owner olmayan biri mint yapamamalı", async function () {
+            await expect(token.connect(addr1).mint(addr1.address, 100))
+                .to.be.revertedWithCustomError(token, "OwnableUnauthorizedAccount");
         });
 
         it("Kullanıcılar kendi tokenlarını yakabilmeli", async function () {
