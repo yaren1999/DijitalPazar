@@ -55,6 +55,7 @@ describe("SecureToken Ekosistemi", function () {
         it("İzin (Allowance) yoksa veya yetersizse transferFrom reddedilmeli", async function () {
             const limit = ethers.parseEther("10"); 
             const tryingToSpend = ethers.parseEther("50"); 
+
             await token.approve(addr1.address, limit);
             
             await expect(
@@ -64,16 +65,23 @@ describe("SecureToken Ekosistemi", function () {
     });
 
     describe("3. Güvenlik ve Pausable (Durdurulabilirlik)", function () {
-        it("Sistem durdurulduğunda transfer yapılamamalı", async function () {
-            await token.pause();
-            await expect(token.transfer(addr1.address, 100))
-                .to.be.revertedWithCustomError(token, "EnforcedPause");
-        });
+        it("Sistem durdurulduğunda direkt transfer yapılamamalı", async function () {
+        await token.pause();
+        await expect(token.transfer(addr1.address, 100))
+            .to.be.revertedWithCustomError(token, "EnforcedPause");
+    });
 
-        it("Sadece sahip (Owner) sistemi durdurabilmeli", async function () {
-            await expect(token.connect(addr1).pause())
-                .to.be.revertedWithCustomError(token, "OwnableUnauthorizedAccount");
-        });
+    it("Sistem durdurulduğunda aracı transferi (transferFrom) yapılamamalı", async function () {
+        await token.approve(addr1.address, 100);
+        await token.pause();
+        await expect(token.connect(addr1).transferFrom(owner.address, addr2.address, 50))
+            .to.be.revertedWithCustomError(token, "EnforcedPause");
+    });
+
+    it("Sadece sahip (Owner) sistemi durdurabilmeli", async function () {
+        await expect(token.connect(addr1).pause())
+            .to.be.revertedWithCustomError(token, "OwnableUnauthorizedAccount");
+    });
     });
 
     describe("4. Üretme ve Yakma (Mint & Burn)", function () {
