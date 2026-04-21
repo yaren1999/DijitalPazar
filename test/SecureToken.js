@@ -50,6 +50,17 @@ describe("SecureToken Ekosistemi", function () {
             expect(await token.allowance(owner.address, addr1.address))
                 .to.equal(totalAllowance - spendAmount);
         });
+
+        
+        it("İzin (Allowance) yoksa veya yetersizse transferFrom reddedilmeli", async function () {
+            const limit = ethers.parseEther("10"); 
+            const tryingToSpend = ethers.parseEther("50"); 
+            await token.approve(addr1.address, limit);
+            
+            await expect(
+                token.connect(addr1).transferFrom(owner.address, addr2.address, tryingToSpend)
+            ).to.be.reverted;
+        });
     });
 
     describe("3. Güvenlik ve Pausable (Durdurulabilirlik)", function () {
