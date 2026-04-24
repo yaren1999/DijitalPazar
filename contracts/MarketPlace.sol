@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract Marketplace is Ownable {
+    IERC20 public token;
+
+    struct Item {
+        uint256 id;
+        string name;
+        uint256 price;
+        address payable seller;
+        bool isSold;
+    }
+
+    mapping(uint256 => Item) public items;
+    uint256 public itemCount; 
+
+  
+    event ItemListed(uint256 id, string name, uint256 price, address seller);
+
+    constructor(address _tokenAddress) Ownable(msg.sender) {
+        token = IERC20(_tokenAddress);
+    }
+
+    function listItem(string memory _name, uint256 _price) public {
+        require(_price > 0, "Fiyat 0 olamaz");
+
+        itemCount++; // Yeni bir ID oluştur
+        items[itemCount] = Item(
+            itemCount,
+            _name,
+            _price,
+            payable(msg.sender),
+            false
+        );
+
+        emit ItemListed(itemCount, _name, _price, msg.sender);
+    }
+}
