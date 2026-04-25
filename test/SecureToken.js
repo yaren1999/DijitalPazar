@@ -28,11 +28,14 @@ describe("SecureToken Ekosistemi", function () {
             expect(await token.balanceOf(addr1.address)).to.equal(amount);
         });
 
+        
         it("Sıfır adresine (0x0) transfer yapılamamalı", async function () {
             await expect(
                 token.transfer("0x0000000000000000000000000000000000000000", 100)
             ).to.be.reverted;
         });
+     });
+     describe("Approve - Allowance- TransferFrom işlemleri doğru mu", function (){   
 
         it("Approve ve TransferFrom (Aracı Transferi) çalışmalı", async function () {
             const amount = ethers.parseEther("100");
@@ -62,7 +65,9 @@ describe("SecureToken Ekosistemi", function () {
                 token.connect(addr1).transferFrom(owner.address, addr2.address, tryingToSpend)
             ).to.be.reverted;
         });
-    });
+
+    });  
+   
 
     describe("3. Güvenlik ve Pausable (Durdurulabilirlik)", function () {
         it("Sistem durdurulduğunda direkt transfer yapılamamalı", async function () {
