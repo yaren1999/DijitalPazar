@@ -3,8 +3,9 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol"; // 1. Bunu ekledik
 
-contract Marketplace is Ownable {
+contract Marketplace is Ownable, Pausable {
     IERC20 public token;
 
     struct Item {
@@ -25,7 +26,7 @@ contract Marketplace is Ownable {
         token = IERC20(_tokenAddress);
     }
 
-    function listItem(string memory _name, uint256 _price) public {
+    function listItem(string memory _name, uint256 _price) public whenNotPaused {
         require(_price > 0, "Fiyat 0 olamaz");
 
         itemCount++; // Yeni bir ID oluştur
@@ -41,7 +42,7 @@ contract Marketplace is Ownable {
     }
 
    
-   function buyItem(uint256 _id) public {
+   function buyItem(uint256 _id) public whenNotPaused {
      require(_id > 0 && _id <= itemCount, "Urun mevcut degil");
      Item storage item = items[_id];
      require(!item.isSold, "Urun zaten satildi");
@@ -70,5 +71,13 @@ contract Marketplace is Ownable {
      require(!item.isSold, "Satilmis urun iptal edilemez");
 
      item.isSold = true; 
+    }
+
+    function pause() public onlyOwner {
+      _pause();
+     }
+
+     function unpause() public onlyOwner {
+      _unpause();
     }
 }

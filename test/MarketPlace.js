@@ -62,29 +62,50 @@ describe("Marketplace (Pazar Yeri) Testleri", function () {
    });
 
    describe("3. Ürün Yönetimi (Update & Cancel)", function () {
-    const initialPrice = ethers.parseEther("50");
-    const newPrice = ethers.parseEther("70");
+        const initialPrice = ethers.parseEther("50");
+        const newPrice = ethers.parseEther("70");
 
-    beforeEach(async function () {
-        await marketplace.connect(addr1).listItem("Klavye", initialPrice);
+        beforeEach(async function () {
+            await marketplace.connect(addr1).listItem("Klavye", initialPrice);
+        });
+
+        it("Satıcı ürünün fiyatını güncelleyebilmeli (Test 7)", async function () {
+            await marketplace.connect(addr1).updateItemPrice(1, newPrice);
+             const item = await marketplace.items(1);
+            expect(item.price).to.equal(newPrice);
+        });
+
+        it("Başka biri fiyatı değiştirmeye çalışırsa hata vermeli (Test 8)", async function () {
+            await expect(
+                marketplace.connect(addr2).updateItemPrice(1, newPrice)
+            ).to.be.revertedWith("Sadece satici fiyat guncelleyebilir");
+        });
+
+        it("Satıcı ürünü satıştan kaldırabilmeli (Test 9)", async function () {
+            await marketplace.connect(addr1).cancelListing(1);
+             const item = await marketplace.items(1);
+            expect(item.isSold).to.equal(true);
+        });
     });
 
-    it("Satıcı ürünün fiyatını güncelleyebilmeli (Test 7)", async function () {
-        await marketplace.connect(addr1).updateItemPrice(1, newPrice);
-        const item = await marketplace.items(1);
-        expect(item.price).to.equal(newPrice);
-    });
-
-    it("Başka biri fiyatı değiştirmeye çalışırsa hata vermeli (Test 8)", async function () {
+    describe("4. Güvenlik (Pause/Unpause)", function () {
+      it("Sistem durdurulduğunda (Pause) listeleme ve satış yapılamamalı (Test 10 & 11)", async function () {
+        await marketplace.pause();
+        
+        const price = ethers.parseEther("50");
         await expect(
-            marketplace.connect(addr2).updateItemPrice(1, newPrice)
-        ).to.be.revertedWith("Sadece satici fiyat guncelleyebilir");
-    });
+            marketplace.connect(addr1).listItem("Laptop", price)
+        ).to.be.revertedWithCustomError(marketplace, "EnforcedPause"); 
 
-    it("Satıcı ürünü satıştan kaldırabilmeli (Test 9)", async function () {
-        await marketplace.connect(addr1).cancelListing(1);
-        const item = await marketplace.items(1);
-        expect(item.isSold).to.equal(true);
+        await marketplace.unpause();
+        await expect(marketplace.connect(addr1).listItem("Laptop", price))
+            .to.emit(marketplace, "ItemListed");
+     });
+
+     it("Sadece sahibi dükkanı kapatabilmeli", async function () {
+         await expect(
+            marketplace.connect(addr1).pause()
+         ).to.be.reverted; 
+        });
     });
-});
 });
