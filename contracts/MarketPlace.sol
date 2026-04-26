@@ -41,12 +41,34 @@ contract Marketplace is Ownable {
     }
 
    
-function buyItem(uint256 _id) public {
-    require(_id > 0 && _id <= itemCount, "Urun mevcut degil");
-    Item storage item = items[_id];
-    require(!item.isSold, "Urun zaten satildi");
+   function buyItem(uint256 _id) public {
+     require(_id > 0 && _id <= itemCount, "Urun mevcut degil");
+     Item storage item = items[_id];
+     require(!item.isSold, "Urun zaten satildi");
     
-    require(token.transferFrom(msg.sender, item.seller, item.price), "Odeme basarisiz");
-    item.isSold = true;
-}
+     require(token.transferFrom(msg.sender, item.seller, item.price), "Odeme basarisiz");
+     item.isSold = true;
+    }
+
+   function updateItemPrice(uint256 _id, uint256 _newPrice) public {
+     require(_id > 0 && _id <= itemCount, "Urun mevcut degil");
+     Item storage item = items[_id];
+    
+     require(msg.sender == item.seller, "Sadece satici fiyat guncelleyebilir");
+     require(_newPrice > 0, "Fiyat 0 olamaz");
+     require(!item.isSold, "Satilmis urunun fiyati degismez");
+
+     item.price = _newPrice;
+    }
+
+
+  function cancelListing(uint256 _id) public {
+     require(_id > 0 && _id <= itemCount, "Urun mevcut degil");
+     Item storage item = items[_id];
+   
+     require(msg.sender == item.seller, "Sadece satici iptal edebilir");
+     require(!item.isSold, "Satilmis urun iptal edilemez");
+
+     item.isSold = true; 
+    }
 }

@@ -37,12 +37,12 @@ describe("Marketplace (Pazar Yeri) Testleri", function () {
      describe("2. Satın Alma (Buying)", function () {
        const price = ethers.parseEther("50");
 
-     beforeEach(async function () {
+      beforeEach(async function () {
         await marketplace.connect(addr1).listItem("Laptop", price);
      
       });
 
-     it("Ürün satın alınabilmeli ve para satıcıya gitmeli", async function () {
+      it("Ürün satın alınabilmeli ve para satıcıya gitmeli", async function () {
             await token.transfer(addr2.address, price);
             await token.connect(addr2).approve(await marketplace.getAddress(), price);
             await marketplace.connect(addr2).buyItem(1);
@@ -60,4 +60,31 @@ describe("Marketplace (Pazar Yeri) Testleri", function () {
             ).to.be.reverted;
         });
    });
+
+   describe("3. Ürün Yönetimi (Update & Cancel)", function () {
+    const initialPrice = ethers.parseEther("50");
+    const newPrice = ethers.parseEther("70");
+
+    beforeEach(async function () {
+        await marketplace.connect(addr1).listItem("Klavye", initialPrice);
+    });
+
+    it("Satıcı ürünün fiyatını güncelleyebilmeli (Test 7)", async function () {
+        await marketplace.connect(addr1).updateItemPrice(1, newPrice);
+        const item = await marketplace.items(1);
+        expect(item.price).to.equal(newPrice);
+    });
+
+    it("Başka biri fiyatı değiştirmeye çalışırsa hata vermeli (Test 8)", async function () {
+        await expect(
+            marketplace.connect(addr2).updateItemPrice(1, newPrice)
+        ).to.be.revertedWith("Sadece satici fiyat guncelleyebilir");
+    });
+
+    it("Satıcı ürünü satıştan kaldırabilmeli (Test 9)", async function () {
+        await marketplace.connect(addr1).cancelListing(1);
+        const item = await marketplace.items(1);
+        expect(item.isSold).to.equal(true);
+    });
+});
 });
