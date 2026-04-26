@@ -39,4 +39,14 @@ contract Marketplace is Ownable {
 
         emit ItemListed(itemCount, _name, _price, msg.sender);
     }
+
+   
+function buyItem(uint256 _id) public {
+    require(_id > 0 && _id <= itemCount, "Urun mevcut degil");
+    Item storage item = items[_id];
+    require(!item.isSold, "Urun zaten satildi");
+    
+    require(token.transferFrom(msg.sender, item.seller, item.price), "Odeme basarisiz");
+    item.isSold = true;
+}
 }

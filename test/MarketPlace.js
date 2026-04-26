@@ -12,9 +12,9 @@ describe("Marketplace (Pazar Yeri) Testleri", function () {
 
         Marketplace = await ethers.getContractFactory("Marketplace");
         marketplace = await Marketplace.deploy(await token.getAddress());
-    });
+       });
 
-    describe("1. Ürün Listeleme (Listing)", function () {
+     describe("1. Ürün Listeleme (Listing)", function () {
         it("Satıcı dükkana ürün ekleyebilmeli", async function () {
             const price = ethers.parseEther("50"); 
             await expect(marketplace.connect(addr1).listItem("Laptop", price))
@@ -32,5 +32,32 @@ describe("Marketplace (Pazar Yeri) Testleri", function () {
                 marketplace.connect(addr1).listItem("Bedava Ürün", 0)
             ).to.be.revertedWith("Fiyat 0 olamaz");
         });
-    });
+      });
+
+     describe("2. Satın Alma (Buying)", function () {
+       const price = ethers.parseEther("50");
+
+     beforeEach(async function () {
+        await marketplace.connect(addr1).listItem("Laptop", price);
+     
+      });
+
+     it("Ürün satın alınabilmeli ve para satıcıya gitmeli", async function () {
+            await token.transfer(addr2.address, price);
+            await token.connect(addr2).approve(await marketplace.getAddress(), price);
+            await marketplace.connect(addr2).buyItem(1);
+
+            
+            expect(await token.balanceOf(addr1.address)).to.equal(price); 
+            const item = await marketplace.items(1);
+            expect(item.isSold).to.equal(true); 
+          });
+
+         it("Parası yetmeyen biri almaya çalışınca hata vermeli", async function () {
+            await token.connect(addr2).approve(await marketplace.getAddress(), price);
+            await expect(
+                marketplace.connect(addr2).buyItem(1)
+            ).to.be.reverted;
+        });
+   });
 });
