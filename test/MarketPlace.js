@@ -61,4 +61,24 @@ describe("Marketplace (NFT Pazar Yeri) Kapsamlı Testler", function () {
                 .to.be.revertedWithCustomError(marketplace, "EnforcedPause");
         });
     });
+
+    describe("4. Gelişmiş Satın Alma Kontrolleri", function () {
+        it("Satıcı kendi NFT'sini satın alamamalı", async function () {
+            await nft.connect(addr1).approve(await marketplace.getAddress(), 0);
+            await marketplace.connect(addr1).listItem(0, PRICE);
+            
+            await expect(marketplace.connect(addr1).buyItem(1))
+                .to.be.revertedWith("Satici kendi urununu alamaz"); 
+        });
+
+        it("Satılmış NFT tekrar satın alınamamalı", async function () {
+            await nft.connect(addr1).approve(await marketplace.getAddress(), 0);
+            await marketplace.connect(addr1).listItem(0, PRICE);
+            await token.connect(addr2).approve(await marketplace.getAddress(), PRICE);
+            await marketplace.connect(addr2).buyItem(1);
+
+            await expect(marketplace.connect(addr2).buyItem(1))
+                .to.be.revertedWith("Urun zaten satildi");
+        });
+    });
 });
