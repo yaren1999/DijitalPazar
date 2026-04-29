@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.24; // Versiyonu 0.8.24 yapalım, her şeyle uyumlu olsun
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol"; // NFT için bunu ekledik
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol"; // 1. Bunu ekledik
+import "@openzeppelin/contracts/utils/Pausable.sol";
 
 contract Marketplace is Ownable, Pausable {
     IERC20 public token;
+    IERC721 public nftContract; // NFT kontratını burada tutacağız
 
     struct Item {
         uint256 id;
-        string name;
+        uint256 nftId; // NFT'nin kendi ID'si
         uint256 price;
         address payable seller;
         bool isSold;
@@ -19,65 +21,62 @@ contract Marketplace is Ownable, Pausable {
     mapping(uint256 => Item) public items;
     uint256 public itemCount; 
 
-  
-    event ItemListed(uint256 id, string name, uint256 price, address seller);
+    event ItemListed(uint256 id, uint256 nftId, uint256 price, address seller);
 
-    constructor(address _tokenAddress) Ownable(msg.sender) {
+    // Constructor'a NFT adresini de ekledik
+    constructor(address _tokenAddress, address _nftAddress) Ownable(msg.sender) {
         token = IERC20(_tokenAddress);
+        nftContract = IERC721(_nftAddress);
     }
 
-    function listItem(string memory _name, uint256 _price) public whenNotPaused {
+    // Ürün listeleme artık gerçek bir NFT ID'si alıyor
+    function listItem(uint256 _nftId, uint256 _price) public whenNotPaused {
         require(_price > 0, "Fiyat 0 olamaz");
+        
+        // ÖNEMLİ: Satıcı NFT'ye gerçekten sahip mi ve pazar yerine izin verdi mi?
+        require(nftContract.ownerOf(_nftId) == msg.sender, "Bu NFT'nin sahibi degilsiniz");
 
-        itemCount++; // Yeni bir ID oluştur
+        itemCount++; 
         items[itemCount] = Item(
             itemCount,
-            _name,
+            _nftId,
             _price,
             payable(msg.sender),
             false
         );
 
-        emit ItemListed(itemCount, _name, _price, msg.sender);
+        emit ItemListed(itemCount, _nftId, _price, msg.sender);
     }
 
-   
-   function buyItem(uint256 _id) public whenNotPaused {
-     require(_id > 0 && _id <= itemCount, "Urun mevcut degil");
-     Item storage item = items[_id];
-     require(!item.isSold, "Urun zaten satildi");
-    
-     require(token.transferFrom(msg.sender, item.seller, item.price), "Odeme basarisiz");
-     item.isSold = true;
+    function buyItem(uint256 _id) public whenNotPaused {
+        require(_id > 0 && _id <= itemCount, "Urun mevcut degil");
+        Item storage item = items[_id];
+        require(!item.isSold, "Urun zaten satildi");
+        
+        // 1. Önce parayı (Token) transfer et
+        require(token.transferFrom(msg.sender, item.seller, item.price), "Odeme basarisiz");
+
+        // 2. Sonra NFT'yi transfer et (Satıcıdan Alıcıya)
+        nftContract.safeTransferFrom(item.seller, msg.sender, item.nftId);
+
+        item.isSold = true;
     }
 
-   function updateItemPrice(uint256 _id, uint256 _newPrice) public {
-     require(_id > 0 && _id <= itemCount, "Urun mevcut degil");
-     Item storage item = items[_id];
-    
-     require(msg.sender == item.seller, "Sadece satici fiyat guncelleyebilir");
-     require(_newPrice > 0, "Fiyat 0 olamaz");
-     require(!item.isSold, "Satilmis urunun fiyati degismez");
-
-     item.price = _newPrice;
+    // Diğer fonksiyonlar (update, pause vb.) aynı kalabilir
+    function updateItemPrice(uint256 _id, uint256 _newPrice) public {
+        require(_id > 0 && _id <= itemCount, "Urun mevcut degil");
+        Item storage item = items[_id];
+        require(msg.sender == item.seller, "Sadece satici guncelleyebilir");
+        require(!item.isSold, "Satilmis urun degismez");
+        item.price = _newPrice;
     }
 
-
-  function cancelListing(uint256 _id) public {
-     require(_id > 0 && _id <= itemCount, "Urun mevcut degil");
-     Item storage item = items[_id];
-   
-     require(msg.sender == item.seller, "Sadece satici iptal edebilir");
-     require(!item.isSold, "Satilmis urun iptal edilemez");
-
-     item.isSold = true; 
+    function cancelListing(uint256 _id) public {
+        Item storage item = items[_id];
+        require(msg.sender == item.seller, "Sadece satici iptal edebilir");
+        item.isSold = true; 
     }
 
-    function pause() public onlyOwner {
-      _pause();
-     }
-
-     function unpause() public onlyOwner {
-      _unpause();
-    }
+    function pause() public onlyOwner { _pause(); }
+    function unpause() public onlyOwner { _unpause(); }
 }
