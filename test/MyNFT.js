@@ -16,15 +16,17 @@ describe("MyNFT (Dijital Varlık) Testleri", function () {
     });
 
     it("Sadece sahibi (Owner) NFT üretebilmeli", async function () {
+        const metadataURL = "ipfs://test-linki";
+        await myNFT.mintNFT(addr1.address, metadataURL);
         
-        await myNFT.mintNFT(addr1.address);
         expect(await myNFT.balanceOf(addr1.address)).to.equal(1);
-        expect(await myNFT.ownerOf(0)).to.equal(addr1.address);
+        expect(await myNFT.tokenURI(0)).to.equal(metadataURL);
     });
 
     it("Sahibi olmayan biri NFT üretmeye çalışırsa hata vermeli", async function () {
+        const metadataURL = "ipfs://hata-testi";
         await expect(
-            myNFT.connect(addr1).mintNFT(addr1.address)
-        ).to.be.reverted; 
+            myNFT.connect(addr1).mintNFT(addr1.address, metadataURL)
+        ).to.be.reverted;
     });
 });
