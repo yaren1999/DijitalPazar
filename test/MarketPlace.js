@@ -71,6 +71,7 @@ describe("Marketplace (NFT Pazar Yeri) Kapsamlı Testler", function () {
                 .to.be.revertedWith("Satici kendi urununu alamaz"); 
         });
 
+        
         it("Satılmış NFT tekrar satın alınamamalı", async function () {
             await nft.connect(addr1).approve(await marketplace.getAddress(), 0);
             await marketplace.connect(addr1).listItem(0, PRICE);
