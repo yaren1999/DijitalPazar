@@ -78,8 +78,26 @@ describe("Marketplace (NFT Pazar Yeri) Kapsamlı Testler", function () {
             await token.connect(addr2).approve(await marketplace.getAddress(), PRICE);
             await marketplace.connect(addr2).buyItem(1);
 
-            await expect(marketplace.connect(addr2).buyItem(1))
-                .to.be.revertedWith("Urun zaten satildi");
+            await expect(marketplace.connect(addr1).buyItem(1))
+            .to.be.revertedWith('Urun satis icin aktif degil');
+        });
+
+        it("İptal edilen ürün tekrar listelenebilmeli", async function () {
+            await nft.connect(addr1).approve(await marketplace.getAddress(), 0);
+            await marketplace.connect(addr1).listItem(0, PRICE);
+              
+            await marketplace.connect(addr1).cancelListing(1);
+            await expect(marketplace.connect(addr1).listItem(0, ethers.parseEther("150")))
+                .to.emit(marketplace, "ItemListed");
+        });
+
+        it("Başkası fiyat güncelleyememeli", async function () {
+            await nft.connect(addr1).approve(await marketplace.getAddress(), 0);
+            await marketplace.connect(addr1).listItem(0, PRICE);
+            
+            await expect(
+                marketplace.connect(addr2).updateItemPrice(1, ethers.parseEther("50"))
+            ).to.be.revertedWith("Sadece satici guncelleyebilir");
         });
     });
 });
