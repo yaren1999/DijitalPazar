@@ -1,15 +1,21 @@
 require("@nomicfoundation/hardhat-toolbox");
+require("dotenv").config();
 
-/** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
-    version: "0.8.24",
+    version: "0.8.25",
     settings: {
+      evmVersion: "cancun", 
       optimizer: {
         enabled: true,
         runs: 200,
       },
-      evmVersion: "cancun", 
+    },
+  },
+  networks: {
+    sepolia: {
+      url: process.env.ALCHEMY_URL,
+      accounts: [process.env.PRIVATE_KEY],
     },
   },
 };
