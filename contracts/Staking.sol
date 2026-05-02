@@ -26,7 +26,6 @@ contract Staking is Ownable, ReentrancyGuard {
         return rewards[account] + newReward;
     }
 
-     
 
     function stake(uint256 amount) external nonReentrant {
         require(amount > 0, "Sifir miktar stake edilemez");
@@ -36,8 +35,6 @@ contract Staking is Ownable, ReentrancyGuard {
         stakedAmount[msg.sender] += amount;
         stakingToken.transferFrom(msg.sender, address(this), amount);
     }
-    
-    // Dağıtım Fonskiyonları
 
     function withdraw() external nonReentrant {
         uint256 amount = stakedAmount[msg.sender];
