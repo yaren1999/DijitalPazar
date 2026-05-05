@@ -58,7 +58,6 @@ describe("SecureToken Ekosistemi", function () {
         it("İzin (Allowance) yoksa veya yetersizse transferFrom reddedilmeli", async function () {
             const limit = ethers.parseEther("10"); 
             const tryingToSpend = ethers.parseEther("50"); 
-
             await token.approve(addr1.address, limit);
             
             await expect(
@@ -88,6 +87,7 @@ describe("SecureToken Ekosistemi", function () {
             .to.be.revertedWithCustomError(token, "OwnableUnauthorizedAccount");
     });
     });
+    
 
     describe("4. Üretme ve Yakma (Mint & Burn)", function () {
         it("Sahip (Owner) yeni token üretebilmeli", async function () {
